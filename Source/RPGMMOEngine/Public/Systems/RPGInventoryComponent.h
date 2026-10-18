@@ -9,10 +9,12 @@ class RPGMMOENGINE_API URPGInventoryComponent : public UActorComponent
 {
     GENERATED_BODY()
 public:
+    URPGInventoryComponent();
     UFUNCTION(BlueprintCallable) bool AddItem(const FRPGItemRef& Item);
     UFUNCTION(BlueprintCallable) bool RemoveItem(FName ItemId,int32 Quantity);
     UFUNCTION(BlueprintPure) int32 GetItemCount(FName ItemId) const;
     UFUNCTION(BlueprintPure) const TArray<FRPGItemRef>& GetItems() const { return Items; }
 protected:
     UPROPERTY(EditAnywhere,Replicated,BlueprintReadOnly) TArray<FRPGItemRef> Items;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
