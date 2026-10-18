@@ -9,9 +9,11 @@ class RPGMMOENGINE_API URPGEquipmentComponent : public UActorComponent
 {
     GENERATED_BODY()
 public:
+    URPGEquipmentComponent();
     UFUNCTION(BlueprintCallable) bool EquipItem(const FRPGItemRef& Item, ERPGEquipmentSlot Slot);
     UFUNCTION(BlueprintCallable) bool UnequipItem(ERPGEquipmentSlot Slot);
     UFUNCTION(BlueprintPure) bool HasEquipment(ERPGEquipmentSlot Slot) const;
 protected:
     UPROPERTY(EditAnywhere,Replicated,BlueprintReadOnly) TMap<TEnumAsByte<ERPGEquipmentSlot>,FRPGItemRef> Equipped;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
