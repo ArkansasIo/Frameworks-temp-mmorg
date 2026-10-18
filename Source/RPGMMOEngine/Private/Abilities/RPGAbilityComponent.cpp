@@ -10,11 +10,7 @@ URPGAbilityComponent::URPGAbilityComponent()
 
 bool URPGAbilityComponent::RegisterAbility(const FRPGAbilitySpec& Ability)
 {
-    if (Ability.AbilityId.IsNone())
-    {
-        return false;
-    }
-
+    if (Ability.AbilityId.IsNone()) return false;
     for (FRPGAbilitySpec& Existing : Abilities)
     {
         if (Existing.AbilityId == Ability.AbilityId)
@@ -36,24 +32,14 @@ bool URPGAbilityComponent::CanCast(FName AbilityId) const
 
 bool URPGAbilityComponent::CastAbility(FName AbilityId, AActor* Target)
 {
-    if (!CanCast(AbilityId))
-    {
-        return false;
-    }
+    if (!CanCast(AbilityId)) return false;
 
     const FRPGAbilitySpec* Spec = Abilities.FindByPredicate([AbilityId](const FRPGAbilitySpec& Item)
     {
         return Item.AbilityId == AbilityId;
     });
-    if (!Spec)
-    {
-        return false;
-    }
-
-    if (Spec->Targeting != ERPGAbilityTargeting::Self && !Target)
-    {
-        return false;
-    }
+    if (!Spec) return false;
+    if (Spec->Targeting != ERPGAbilityTargeting::Self && !Target) return false;
 
     if (Spec->Targeting != ERPGAbilityTargeting::Self)
     {
@@ -69,16 +55,22 @@ bool URPGAbilityComponent::CastAbility(FName AbilityId, AActor* Target)
 
 void URPGAbilityComponent::ResetCooldowns()
 {
-    for (TPair<FName, float>& Pair : Cooldowns)
-    {
-        Pair.Value = 0.0f;
-    }
+    for (TPair<FName, float>& Pair : Cooldowns) Pair.Value = 0.0f;
 }
 
 float URPGAbilityComponent::GetRemainingCooldown(FName AbilityId) const
 {
     const float* Remaining = Cooldowns.Find(AbilityId);
     return Remaining ? FMath::Max(0.0f, *Remaining) : 0.0f;
+}
+
+void URPGAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    for (TPair<FName, float>& Pair : Cooldowns)
+    {
+        Pair.Value = FMath::Max(0.0f, Pair.Value - DeltaTime);
+    }
 }
 
 void URPGAbilityComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
