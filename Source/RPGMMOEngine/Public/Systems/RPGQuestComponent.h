@@ -11,10 +11,12 @@ class RPGMMOENGINE_API URPGQuestComponent : public UActorComponent
 {
     GENERATED_BODY()
 public:
+    URPGQuestComponent();
     UFUNCTION(BlueprintCallable) void StartQuest(FName QuestId,int32 RequiredProgress=1);
     UFUNCTION(BlueprintCallable) void AdvanceQuest(FName QuestId,int32 Amount=1);
     UFUNCTION(BlueprintCallable) void AbandonQuest(FName QuestId);
     UFUNCTION(BlueprintPure) bool IsQuestComplete(FName QuestId) const;
 protected:
     UPROPERTY(Replicated,BlueprintReadOnly) TArray<FRPGQuestState> Quests;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
