@@ -1,0 +1,30 @@
+{
+  "world": {"id":"aetheria","name":"Aetheria","mapId":"world-main"},
+  "biomes": [
+    {"id":"greenfall","name":"Greenfall Plains","type":"PLAINS","levelMin":1,"levelMax":8,"resourceIds":["herb","wood"],"enemyIds":["slime","wolf"]},
+    {"id":"whisperwood","name":"Whisperwood","type":"FOREST","levelMin":5,"levelMax":15,"resourceIds":["wood","mushroom"],"enemyIds":["wolf","spider"]},
+    {"id":"sunscar","name":"Sunscar Desert","type":"DESERT","levelMin":12,"levelMax":24,"resourceIds":["ore","crystal"],"enemyIds":["scorpion","sand_wyrm"]},
+    {"id":"frostmere","name":"Frostmere","type":"TUNDRA","levelMin":20,"levelMax":35,"resourceIds":["ice_crystal","ore"],"enemyIds":["ice_wolf","frost_giant"]},
+    {"id":"ashenreach","name":"Ashenreach","type":"VOLCANIC","levelMin":30,"levelMax":50,"resourceIds":["obsidian","ember_core"],"enemyIds":["fire_drake","magma_golem"]}
+  ],
+  "zones": [
+    {"id":"greenfall","name":"Greenfall Village","biomeId":"greenfall","recommendedLevel":1,"width":64,"height":64,"nodeIds":["starter","greenfall-road","greenfall-lake"],"dungeonIds":[],"safeZone":true},
+    {"id":"whisperwood","name":"Whisperwood","biomeId":"whisperwood","recommendedLevel":5,"width":96,"height":96,"nodeIds":["forest-gate","forest-deep"],"dungeonIds":["rootvault"]},
+    {"id":"sunscar","name":"Sunscar Expanse","biomeId":"sunscar","recommendedLevel":12,"width":128,"height":96,"nodeIds":["desert-gate","sunscar-oasis"],"dungeonIds":["buried-temple"]},
+    {"id":"frostmere","name":"Frostmere Tundra","biomeId":"frostmere","recommendedLevel":20,"width":128,"height":128,"nodeIds":["frost-gate","frost-citadel"],"dungeonIds":["icehold"]},
+    {"id":"ashenreach","name":"Ashenreach","biomeId":"ashenreach","recommendedLevel":30,"width":160,"height":160,"nodeIds":["ash-gate","volcano-heart"],"dungeonIds":["embercore"]}
+  ],
+  "mapPoints": [
+    {"id":"p1","zoneId":"greenfall","x":12,"y":18,"label":"Greenfall Village","kind":"town"},
+    {"id":"p2","zoneId":"whisperwood","x":42,"y":28,"label":"Rootvault","kind":"dungeon"},
+    {"id":"p3","zoneId":"sunscar","x":70,"y":35,"label":"Buried Temple","kind":"dungeon"},
+    {"id":"p4","zoneId":"frostmere","x":52,"y":58,"label":"Icehold","kind":"dungeon"},
+    {"id":"p5","zoneId":"ashenreach","x":90,"y":72,"label":"Embercore","kind":"dungeon"}
+  ],
+  "dungeons": [
+    {"id":"rootvault","name":"Rootvault Caverns","zoneId":"whisperwood","levelMin":5,"levelMax":12,"rooms":5,"bossId":"ancient_treant","recommendedPlayers":4,"lootTableId":"forest_loot"},
+    {"id":"buried-temple","name":"Buried Temple","zoneId":"sunscar","levelMin":12,"levelMax":22,"rooms":6,"bossId":"sand_tyrant","recommendedPlayers":4,"lootTableId":"desert_loot"},
+    {"id":"icehold","name":"Icehold Keep","zoneId":"frostmere","levelMin":20,"levelMax":34,"rooms":7,"bossId":"frost_warden","recommendedPlayers":5,"lootTableId":"frost_loot"},
+    {"id":"embercore","name":"Embercore Citadel","zoneId":"ashenreach","levelMin":30,"levelMax":50,"rooms":8,"bossId":"volcanus","recommendedPlayers":5,"lootTableId":"volcanic_loot"}
+  ]
+}
