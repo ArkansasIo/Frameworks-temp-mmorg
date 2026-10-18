@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "abilities": [
+    {
+      "id": "basic_attack",
+      "cooldown": 1.0,
+      "resourceCost": 0,
+      "power": 10,
+      "range": 250,
+      "targeting": "SingleTarget"
+    },
+    {
+      "id": "power_strike",
+      "cooldown": 4.0,
+      "resourceCost": 15,
+      "power": 35,
+      "range": 250,
+      "targeting": "SingleTarget"
+    }
+  ]
+}
