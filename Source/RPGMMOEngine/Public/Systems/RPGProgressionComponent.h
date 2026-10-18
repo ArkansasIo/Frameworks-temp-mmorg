@@ -8,6 +8,7 @@ class RPGMMOENGINE_API URPGProgressionComponent : public UActorComponent
 {
     GENERATED_BODY()
 public:
+    URPGProgressionComponent();
     UFUNCTION(BlueprintCallable) void AddExperience(int64 Amount);
     UFUNCTION(BlueprintCallable) bool AddLevel(int32 Amount);
     UFUNCTION(BlueprintPure) int32 GetLevel() const { return Level; }
@@ -17,4 +18,5 @@ protected:
     UPROPERTY(EditAnywhere,Replicated,BlueprintReadOnly) int32 Level=1;
     UPROPERTY(EditAnywhere,Replicated,BlueprintReadOnly) int64 Experience=0;
     UPROPERTY(EditAnywhere,BlueprintReadOnly) int32 LevelCap=100;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
