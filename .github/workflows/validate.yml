@@ -1,0 +1,16 @@
+name: UE Framework Validation
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate structure
+        shell: bash
+        run: |
+          test -f README.md
+          test -f Source/RPGMMOEngine/RPGMMOEngine.Build.cs
+          test -f Domain/RPGMMODomain.h
+          test -f Data/stats.json
+          test -f Schemas/item.schema.json
+          echo "Framework structure OK"

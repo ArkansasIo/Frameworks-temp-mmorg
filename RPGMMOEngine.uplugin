@@ -1,0 +1,14 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "RPG MMORPG Framework",
+  "Description": "Data-driven RPG/MMORPG gameplay framework for Unreal Engine 5.7.",
+  "Category": "Gameplay",
+  "EnabledByDefault": true,
+  "CanContainContent": true,
+  "Modules": [
+    {"Name":"RPGMMOEngine","Type":"Runtime","LoadingPhase":"Default"},
+    {"Name":"RPGMMOEditor","Type":"Editor","LoadingPhase":"Default"}
+  ]
+}
