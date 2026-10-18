@@ -1,0 +1,36 @@
+-- RPGMMO MySQL 8.0+ schema. The Kotlin server also applies the same schema at startup.
+CREATE DATABASE IF NOT EXISTS rpgmmo CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+USE rpgmmo;
+
+CREATE TABLE IF NOT EXISTS accounts (
+  id CHAR(36) PRIMARY KEY, email VARCHAR(320) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS sessions (
+  id CHAR(36) PRIMARY KEY, account_id CHAR(36) NOT NULL, refresh_hash CHAR(64) NOT NULL UNIQUE,
+  expires_at TIMESTAMP NOT NULL, revoked_at TIMESTAMP NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE, INDEX idx_sessions_account(account_id)
+);
+CREATE TABLE IF NOT EXISTS characters (
+  id CHAR(36) PRIMARY KEY, account_id CHAR(36) NOT NULL, name VARCHAR(32) NOT NULL UNIQUE,
+  class_id VARCHAR(32) NOT NULL, race_id VARCHAR(32) NOT NULL, level INT NOT NULL DEFAULT 1,
+  xp BIGINT NOT NULL DEFAULT 0, gold BIGINT NOT NULL DEFAULT 1000, hp INT NOT NULL DEFAULT 100,
+  current_node VARCHAR(64) NOT NULL DEFAULT 'starter', revision BIGINT NOT NULL DEFAULT 0,
+  player_json JSON NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE, INDEX idx_characters_account(account_id)
+);
+CREATE TABLE IF NOT EXISTS sync_operations (
+  id VARCHAR(64) PRIMARY KEY, character_id CHAR(36) NOT NULL, base_revision BIGINT NOT NULL,
+  accepted BOOLEAN NOT NULL, conflict VARCHAR(64), created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(character_id) REFERENCES characters(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS guilds (id CHAR(36) PRIMARY KEY,name VARCHAR(64) NOT NULL UNIQUE,leader_id CHAR(36) NOT NULL,created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS guild_members (guild_id CHAR(36) NOT NULL,character_id CHAR(36) NOT NULL,officer BOOLEAN NOT NULL DEFAULT FALSE,joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(guild_id,character_id),FOREIGN KEY(guild_id) REFERENCES guilds(id) ON DELETE CASCADE,FOREIGN KEY(character_id) REFERENCES characters(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS parties (id CHAR(36) PRIMARY KEY,leader_id CHAR(36) NOT NULL,created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS party_members (party_id CHAR(36) NOT NULL,character_id CHAR(36) NOT NULL,joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(party_id,character_id),FOREIGN KEY(party_id) REFERENCES parties(id) ON DELETE CASCADE,FOREIGN KEY(character_id) REFERENCES characters(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS matchmaking_tickets (id CHAR(36) PRIMARY KEY,character_id CHAR(36) NOT NULL,queue_name VARCHAR(32) NOT NULL,rating INT NOT NULL,created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,matched_at TIMESTAMP NULL,FOREIGN KEY(character_id) REFERENCES characters(id) ON DELETE CASCADE,INDEX idx_match_queue(queue_name,rating,created_at));
+CREATE TABLE IF NOT EXISTS economy_transactions (id CHAR(36) PRIMARY KEY,character_id CHAR(36) NOT NULL,kind VARCHAR(32) NOT NULL,amount BIGINT NOT NULL,balance_after BIGINT NOT NULL,reference_id VARCHAR(64),created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(character_id) REFERENCES characters(id) ON DELETE CASCADE,INDEX idx_economy_character(character_id,created_at));
+CREATE TABLE IF NOT EXISTS combat_events (id CHAR(36) PRIMARY KEY,character_id CHAR(36) NOT NULL,target_id VARCHAR(64) NOT NULL,ability_id VARCHAR(64) NOT NULL,damage INT NOT NULL,critical BOOLEAN NOT NULL,defeated BOOLEAN NOT NULL,created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(character_id) REFERENCES characters(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS world_nodes (id VARCHAR(64) PRIMARY KEY,name VARCHAR(128) NOT NULL,zone VARCHAR(64) NOT NULL,neighbors_json JSON NOT NULL);
+INSERT IGNORE INTO world_nodes VALUES ('starter','Starter Outpost','starter','["field_1"]'),('field_1','Frontier Field','frontier','["starter","field_2"]'),('field_2','Ruined Gate','frontier','["field_1"]');
