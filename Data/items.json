@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {"id":"iron_sword","name":"Iron Sword","rarity":"Common","level":1,"slot":"MainHand","attack":8},
+    {"id":"traveler_armor","name":"Traveler Armor","rarity":"Common","level":1,"slot":"Chest","health":25},
+    {"id":"minor_health_potion","name":"Minor Health Potion","rarity":"Common","level":1,"consumable":true,"heal":50}
+  ]
+}
