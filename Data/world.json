@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "zones": [
+    {
+      "id": "starter_zone",
+      "rooms": [
+        {"id":1000,"name":"Town Square","description":"A protected starting plaza.","safe":true,"exits":{"north":1001,"east":1002}},
+        {"id":1001,"name":"North Road","description":"A road leaving the town.","safe":false,"exits":{"south":1000}},
+        {"id":1002,"name":"East Market","description":"A small market district.","safe":true,"exits":{"west":1000}}
+      ]
+    }
+  ]
+}
