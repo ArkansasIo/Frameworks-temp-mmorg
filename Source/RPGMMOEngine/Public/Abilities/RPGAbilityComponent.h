@@ -23,5 +23,6 @@ protected:
     UPROPERTY(EditAnywhere, Replicated, BlueprintReadOnly, Category="RPG|Abilities") TArray<FRPGAbilitySpec> Abilities;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="RPG|Abilities") TMap<FName, float> Cooldowns;
 
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
