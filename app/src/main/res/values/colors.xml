@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="rpg_mmo_background">#071018</color>
+    <color name="rpg_mmo_surface">#0D1A24</color>
+    <color name="rpg_mmo_accent">#4FC3F7</color>
+    <color name="rpg_mmo_text">#E6F1F5</color>
+</resources>
