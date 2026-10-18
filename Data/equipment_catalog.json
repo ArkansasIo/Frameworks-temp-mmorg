@@ -1,0 +1,14 @@
+{
+  "items": [
+    {"id":"iron_sword","name":"Iron Sword","description":"Reliable starter blade.","rarity":"COMMON","levelRequired":1,"stackSize":1,"baseValue":80,"equipmentSlot":"MAIN_HAND","power":12,"statBonuses":{"str":2},"icon":"sword_iron"},
+    {"id":"oak_shield","name":"Oak Shield","description":"A sturdy wooden shield.","rarity":"COMMON","levelRequired":1,"stackSize":1,"baseValue":70,"equipmentSlot":"OFF_HAND","power":8,"statBonuses":{"con":2},"icon":"shield_oak"},
+    {"id":"ranger_hood","name":"Ranger Hood","description":"Light armor favored by scouts.","rarity":"UNCOMMON","levelRequired":5,"stackSize":1,"baseValue":160,"equipmentSlot":"HEAD","power":18,"statBonuses":{"dex":3},"icon":"helm_ranger"},
+    {"id":"emberblade","name":"Emberblade","description":"A blade forged around an ember core.","rarity":"EPIC","levelRequired":30,"stackSize":1,"baseValue":12000,"equipmentSlot":"MAIN_HAND","power":110,"statBonuses":{"str":12,"int":6},"icon":"sword_ember"},
+    {"id":"frostmail","name":"Frostmail","description":"Cold-forged defensive armor.","rarity":"RARE","levelRequired":20,"stackSize":1,"baseValue":3200,"equipmentSlot":"CHEST","power":72,"statBonuses":{"con":8,"vit":6},"icon":"armor_frost"},
+    {"id":"aether_ring","name":"Aether Ring","description":"A ring containing a fragment of the world crystal.","rarity":"LEGENDARY","levelRequired":35,"stackSize":1,"baseValue":25000,"equipmentSlot":"RING","power":95,"statBonuses":{"int":10,"wis":10,"lck":5},"icon":"ring_aether"}
+  ],
+  "recipes": [
+    {"id":"iron_sword_recipe","name":"Forge Iron Sword","outputItemId":"iron_sword","outputQuantity":1,"ingredients":{"iron_ore":5,"wood":2},"requiredLevel":1,"station":"forge"},
+    {"id":"emberblade_recipe","name":"Forge Emberblade","outputItemId":"emberblade","outputQuantity":1,"ingredients":{"ember_core":1,"obsidian":10,"iron_sword":1},"requiredLevel":30,"station":"forge"}
+  ]
+}
