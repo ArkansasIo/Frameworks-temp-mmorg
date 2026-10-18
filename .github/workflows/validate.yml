@@ -1,16 +1,21 @@
-name: UE Framework Validation
+name: Project Validation
+
 on: [push, pull_request]
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate structure
+      - name: Validate Android and server structure
         shell: bash
         run: |
           test -f README.md
-          test -f Source/RPGMMOEngine/RPGMMOEngine.Build.cs
-          test -f Domain/RPGMMODomain.h
-          test -f Data/stats.json
-          test -f Schemas/item.schema.json
-          echo "Framework structure OK"
+          test -f settings.gradle.kts
+          test -f build.gradle.kts
+          test -f app/build.gradle.kts
+          test -f server/build.gradle.kts
+          test -f app/src/main/AndroidManifest.xml
+          test -d app/src/main/java/com/arkansasio/rpgmmo
+          test -d server/src/main/kotlin/com/arkansasio/rpgmmo/server
+          echo "Android MMORPG project structure OK"
