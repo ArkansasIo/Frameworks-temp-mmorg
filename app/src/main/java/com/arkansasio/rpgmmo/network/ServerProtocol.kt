@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class LoginRequest(val email:String,val password:String)
 @Serializable data class RegisterRequest(val email:String,val password:String,val displayName:String)
+@Serializable data class RefreshRequest(val refreshToken:String)
 @Serializable data class SessionResponse(val accessToken:String,val refreshToken:String,val expiresAtEpochSeconds:Long,val player:Player?=null)
 @Serializable data class CharacterCreateRequest(val name:String,val classId:String,val raceId:String)
 @Serializable data class CharacterResponse(val player:Player,val serverVersion:Long)
