@@ -17,5 +17,17 @@ jobs:
           java-version: '17'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Build Android and server
-        run: ./gradlew :app:testDebugUnitTest :server:test :server:build
+      - name: Build Android tests, APK, and server
+        run: gradle :app:testDebugUnitTest :app:assembleDebug :server:test :server:build --no-daemon
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpgmmo-test-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+      - name: Upload server distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpgmmo-server
+          path: server/build/libs/*.jar
+          if-no-files-found: error
