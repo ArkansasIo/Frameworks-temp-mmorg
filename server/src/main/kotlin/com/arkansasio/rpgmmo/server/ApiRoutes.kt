@@ -7,7 +7,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
-import java.sql.Connection
 import java.util.UUID
 import kotlin.math.max
 
@@ -18,7 +17,6 @@ class ApiRoutes(private val app:Application, private val config:ServerConfig, pr
         post("/auth/register") { register(call) }
         post("/auth/login") { login(call) }
         post("/auth/refresh") { refresh(call) }
-        authenticate("/characters") { }
         post("/characters") { authorized(call) { createCharacter(call,it) } }
         post("/sync") { authorized(call) { sync(call,it) } }
         post("/world/move") { authorized(call) { move(call,it) } }
@@ -33,8 +31,10 @@ class ApiRoutes(private val app:Application, private val config:ServerConfig, pr
         val req=call.receive<RegisterRequest>(); val email=req.email.trim().lowercase()
         if(!email.contains('@') || req.displayName.length !in 3..32) return call.respond(HttpStatusCode.BadRequest,ErrorResponse("INVALID_INPUT"))
         if(db.accountByEmail(email)!=null) return call.respond(HttpStatusCode.Conflict,ErrorResponse("ACCOUNT_EXISTS"))
-        val account=db.createAccount(email,Passwords.hash(req.password)); val player=db.createCharacter(account.id,req.displayName,"adventurer","human",GameJson.starter(req.displayName,"pending","adventurer","human"))
-        val fixed=player.copy(json=GameJson.ensureId(player.json,player.id)); db.transaction{c->c.prepareStatement("UPDATE characters SET player_json=? WHERE id=?").use{ps->ps.setString(1,fixed.json);ps.setString(2,player.id);ps.executeUpdate()}}
+        val account=db.createAccount(email,Passwords.hash(req.password))
+        val player=db.createCharacter(account.id,req.displayName,"adventurer","human",GameJson.starter(req.displayName,"pending","adventurer","human"))
+        val fixed=player.copy(json=GameJson.ensureId(player.json,player.id))
+        db.transaction{c->c.prepareStatement("UPDATE characters SET player_json=? WHERE id=?").use{ps->ps.setString(1,fixed.json);ps.setString(2,player.id);ps.executeUpdate()}}
         call.respond(session(account.id,fixed.json))
     }
 
@@ -45,9 +45,11 @@ class ApiRoutes(private val app:Application, private val config:ServerConfig, pr
     }
 
     private suspend fun refresh(call:ApplicationCall) {
-        val req=call.receive<RefreshRequest>(); val new=Tokens.refresh(); val accountId=db.rotateRefresh(Tokens.hashRefresh(req.refreshToken),Tokens.hashRefresh(new),now()+config.refreshTtlSeconds)
+        val req=call.receive<RefreshRequest>(); val new=Tokens.refresh()
+        val accountId=db.rotateRefresh(Tokens.hashRefresh(req.refreshToken),Tokens.hashRefresh(new),now()+config.refreshTtlSeconds)
             ?: return call.respond(HttpStatusCode.Unauthorized,ErrorResponse("INVALID_REFRESH_TOKEN"))
-        val player=db.playerForAccount(accountId); call.respond(SessionResponse(Tokens.access(accountId,config),new,now()+config.accessTtlSeconds,player?.json?.let(json::parseToJsonElement)))
+        val player=db.playerForAccount(accountId)
+        call.respond(SessionResponse(Tokens.access(accountId,config),new,now()+config.accessTtlSeconds,player?.json?.let(json::parseToJsonElement)))
     }
 
     private suspend fun createCharacter(call:ApplicationCall,accountId:String) {
@@ -67,17 +69,19 @@ class ApiRoutes(private val app:Application, private val config:ServerConfig, pr
                 if(op.baseRevision != record.revision){rejected += op.id;conflict="STALE_REVISION";db.recordSync(c,op.id,record.id,op.baseRevision,false,conflict);continue}
                 val payload=runCatching{json.parseToJsonElement(op.payload).jsonObject}.getOrNull()
                 if(payload==null || payload["player"]==null){rejected += op.id;db.recordSync(c,op.id,record.id,op.baseRevision,false,"INVALID_PAYLOAD");continue}
-                val p=payload["player"]!!.jsonObject; val ok=db.updatePlayer(c,record.id,record.revision,GameJson.string(p,"name",record.name),GameJson.int(p,"level",record.level),GameJson.long(p,"xp",record.xp),GameJson.long(p,"gold",record.gold),GameJson.int(p,"hp",record.hp),GameJson.string(p,"currentNodeId",record.node),p.toString())
+                val p=payload["player"]!!.jsonObject
+                val ok=db.updatePlayer(c,record.id,record.revision,GameJson.string(p,"name",record.name),GameJson.int(p,"level",record.level),GameJson.long(p,"xp",record.xp),GameJson.long(p,"gold",record.gold),GameJson.int(p,"hp",record.hp),GameJson.string(p,"currentNodeId",record.node),p.toString())
                 if(ok){accepted += op.id;record=record.copy(name=GameJson.string(p,"name",record.name),level=GameJson.int(p,"level",record.level),xp=GameJson.long(p,"xp",record.xp),gold=GameJson.long(p,"gold",record.gold),hp=GameJson.int(p,"hp",record.hp),node=GameJson.string(p,"currentNodeId",record.node),revision=record.revision+1,json=p.toString());db.recordSync(c,op.id,record.id,op.baseRevision,true,null)} else {rejected += op.id;db.recordSync(c,op.id,record.id,op.baseRevision,false,"WRITE_CONFLICT")}
             }
         }
-        val latest=db.playerForAccount(accountId) ?: current; call.respond(SyncResponse(accepted,rejected,json.parseToJsonElement(latest.json),latest.revision,conflict));RealtimeHub.broadcast(accountId,"sync.completed")
+        val latest=db.playerForAccount(accountId) ?: current
+        call.respond(SyncResponse(accepted,rejected,json.parseToJsonElement(latest.json),latest.revision,conflict));RealtimeHub.broadcast(accountId,"sync.completed")
     }
 
     private suspend fun move(call:ApplicationCall,accountId:String) {
         val req=call.receive<MoveRequest>(); val p=db.playerForAccount(accountId) ?: return call.respond(HttpStatusCode.NotFound,ErrorResponse("CHARACTER_NOT_FOUND"))
         if(req.characterId!=p.id || req.clientRevision!=p.revision) return call.respond(HttpStatusCode.Conflict,ErrorResponse("STALE_REVISION"))
-        val valid=db.connection().use{c->c.prepareStatement("SELECT neighbors_json FROM world_nodes WHERE id=?").use{ps->ps.setString(1,req.fromNodeId);ps.executeQuery().use{if(it.next()) Json.parseToJsonElement(it.getString(1)).jsonArray.any{n->n.jsonPrimitive.content==req.toNodeId}else false}}}
+        val valid=db.connection().use{c->c.prepareStatement("SELECT neighbors_json FROM world_nodes WHERE id=?").use{ps->ps.setString(1,req.fromNodeId);ps.executeQuery().use{if(it.next()) json.parseToJsonElement(it.getString(1)).jsonArray.any{n->n.jsonPrimitive.content==req.toNodeId}else false}}}
         if(p.node!=req.fromNodeId || !valid) return call.respond(HttpStatusCode.Conflict,ErrorResponse("INVALID_MOVE"))
         val updated=GameJson.withField(p.json,"currentNodeId",JsonPrimitive(req.toNodeId)); db.transaction{c->if(!db.updatePlayer(c,p.id,p.revision,p.name,p.level,p.xp,p.gold,p.hp,req.toNodeId,updated)) error("MOVE_CONFLICT")}
         call.respond(CharacterResponse(json.parseToJsonElement(updated),p.revision+1));RealtimeHub.broadcast(accountId,"world.moved")
@@ -88,13 +92,13 @@ class ApiRoutes(private val app:Application, private val config:ServerConfig, pr
         if(req.characterId!=p.id || req.clientRevision!=p.revision || p.hp<=0) return call.respond(HttpStatusCode.Conflict,ErrorResponse("STALE_OR_DEFEATED"))
         val seed=Math.floorMod((req.targetId+req.abilityId+p.revision).hashCode(),1000); val critical=seed>=900; val attack=max(1,10+p.level*2); val damage=if(critical)attack*2 else attack
         db.transaction{c->c.prepareStatement("INSERT INTO combat_events(id,character_id,target_id,ability_id,damage,critical,defeated) VALUES(?,?,?,?,?,?,?)").use{ps->ps.setString(1,UUID.randomUUID().toString());ps.setString(2,p.id);ps.setString(3,req.targetId);ps.setString(4,req.abilityId);ps.setInt(5,damage);ps.setBoolean(6,critical);ps.setBoolean(7,false);ps.executeUpdate()}}
-        val nextRevision=db.player(p.id)?.revision ?: p.revision; val response=CombatResponse(true,UUID.randomUUID().toString(),damage,critical,false,nextRevision,null);call.respond(response);RealtimeHub.broadcast(accountId,"combat.hit")
+        val response=CombatResponse(true,UUID.randomUUID().toString(),damage,critical,false,p.revision,null);call.respond(response);RealtimeHub.broadcast(accountId,"combat.hit")
     }
 
     private suspend fun guild(call:ApplicationCall,accountId:String) {
         val req=call.receive<GuildRequest>(); val p=db.playerForAccount(accountId) ?: return call.respond(HttpStatusCode.NotFound,ErrorResponse("CHARACTER_NOT_FOUND"))
         when(req.operation.lowercase()) {
-            "create" -> { val id=UUID.randomUUID().toString(); db.transaction{c->c.prepareStatement("INSERT INTO guilds(id,name,leader_id) VALUES(?,?,?)").use{ps->ps.setString(1,id);ps.setString(2,req.name?.trim());ps.setString(3,p.id);ps.executeUpdate()};c.prepareStatement("INSERT INTO guild_members(guild_id,character_id,officer) VALUES(?,?,TRUE)").use{ps->ps.setString(1,id);ps.setString(2,p.id);ps.executeUpdate()}};call.respond(GuildMutationResponse(true,id)) }
+            "create" -> { val name=req.name?.trim()?.takeIf{it.isNotBlank()} ?: return call.respond(HttpStatusCode.BadRequest,ErrorResponse("INVALID_GUILD_NAME")); val id=UUID.randomUUID().toString(); db.transaction{c->c.prepareStatement("INSERT INTO guilds(id,name,leader_id) VALUES(?,?,?)").use{ps->ps.setString(1,id);ps.setString(2,name);ps.setString(3,p.id);ps.executeUpdate()};c.prepareStatement("INSERT INTO guild_members(guild_id,character_id,officer) VALUES(?,?,TRUE)").use{ps->ps.setString(1,id);ps.setString(2,p.id);ps.executeUpdate()}};call.respond(GuildMutationResponse(true,id)) }
             "join" -> { val gid=req.guildId;db.transaction{c->c.prepareStatement("INSERT IGNORE INTO guild_members(guild_id,character_id) VALUES(?,?)").use{ps->ps.setString(1,gid);ps.setString(2,p.id);ps.executeUpdate()}};call.respond(GuildMutationResponse(true,gid)) }
             "leave" -> { db.transaction{c->c.prepareStatement("DELETE FROM guild_members WHERE guild_id=? AND character_id=?").use{ps->ps.setString(1,req.guildId);ps.setString(2,p.id);ps.executeUpdate()}};call.respond(GuildMutationResponse(true,req.guildId)) }
             else -> call.respond(HttpStatusCode.BadRequest,ErrorResponse("UNSUPPORTED_GUILD_OPERATION"))
@@ -111,7 +115,7 @@ class ApiRoutes(private val app:Application, private val config:ServerConfig, pr
     private suspend fun matchmaking(call:ApplicationCall,accountId:String) {
         val req=call.receive<MatchmakingRequest>(); val p=db.playerForAccount(accountId) ?: return call.respond(HttpStatusCode.NotFound,ErrorResponse("CHARACTER_NOT_FOUND"));val ticket=UUID.randomUUID().toString()
         val match=db.transaction{c->c.prepareStatement("SELECT id,character_id FROM matchmaking_tickets WHERE queue_name=? AND ABS(rating-?)<=150 AND matched_at IS NULL AND character_id<>? ORDER BY created_at LIMIT 1 FOR UPDATE").use{ps->ps.setString(1,req.queue);ps.setInt(2,req.rating);ps.setString(3,p.id);ps.executeQuery().use{if(it.next())it.getString("id") to it.getString("character_id") else null}}}
-        if(match!=null){db.transaction{c->c.prepareStatement("UPDATE matchmaking_tickets SET matched_at=UTC_TIMESTAMP() WHERE id IN (?,?)").use{ps->ps.setString(1,match.first);ps.setString(2,ticket);ps.executeUpdate()};c.prepareStatement("INSERT INTO matchmaking_tickets(id,character_id,queue_name,rating,matched_at) VALUES(?,?,?,?,UTC_TIMESTAMP())").use{ps->ps.setString(1,ticket);ps.setString(2,p.id);ps.setString(3,req.queue);ps.setInt(4,req.rating);ps.executeUpdate()}};val mid=UUID.randomUUID().toString();call.respond(MatchmakingResponse(true,mid,listOf(p.id,match.second),null));RealtimeHub.broadcast(accountId,"match.found")} else {db.transaction{c->c.prepareStatement("INSERT INTO matchmaking_tickets(id,character_id,queue_name,rating) VALUES(?,?,?,?)").use{ps->ps.setString(1,ticket);ps.setString(2,p.id);ps.setString(3,req.queue);ps.setInt(4,req.rating);ps.executeUpdate()}};call.respond(MatchmakingResponse(true,null,emptyList(),null))}
+        if(match!=null){db.transaction{c->c.prepareStatement("UPDATE matchmaking_tickets SET matched_at=UTC_TIMESTAMP() WHERE id=?").use{ps->ps.setString(1,match.first);ps.executeUpdate()};c.prepareStatement("INSERT INTO matchmaking_tickets(id,character_id,queue_name,rating,matched_at) VALUES(?,?,?,?,UTC_TIMESTAMP())").use{ps->ps.setString(1,ticket);ps.setString(2,p.id);ps.setString(3,req.queue);ps.setInt(4,req.rating);ps.executeUpdate()}};val mid=UUID.randomUUID().toString();call.respond(MatchmakingResponse(true,mid,listOf(p.id,match.second),null));RealtimeHub.broadcast(accountId,"match.found")} else {db.transaction{c->c.prepareStatement("INSERT INTO matchmaking_tickets(id,character_id,queue_name,rating) VALUES(?,?,?,?)").use{ps->ps.setString(1,ticket);ps.setString(2,p.id);ps.setString(3,req.queue);ps.setInt(4,req.rating);ps.executeUpdate()}};call.respond(MatchmakingResponse(true,null,emptyList(),null))}
     }
 
     private suspend fun authorized(call:ApplicationCall,block:suspend(ApplicationCall,String)->Unit){val header=call.request.headers[HttpHeaders.Authorization] ?: return call.respond(HttpStatusCode.Unauthorized,ErrorResponse("MISSING_AUTH"));val token=header.removePrefix("Bearer ").trim();val user=Tokens.verifyAccess(token,config) ?: return call.respond(HttpStatusCode.Unauthorized,ErrorResponse("INVALID_AUTH"));block(call,user)}
